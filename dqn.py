@@ -53,8 +53,9 @@ for i_episode in range(max_episodes):
         replay_memory.append((obs_old, action, reward, observation))
         if len(replay_memory) > batch_size:
             mini_batch = random.choice(replay_memory, batch_size)
+            dqn.train_on_batch()
 
-        dqn.train_on_batch()
+
         frame += 1
 
         if done:
