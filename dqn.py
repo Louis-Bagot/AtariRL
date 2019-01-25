@@ -24,11 +24,12 @@ dqn.compile(optimizer='rmsprop',
 # miscellanous initializations of variables or hyperparameters
 replay_memory = [] # replay memory to learn smoothly from the past
 max_memory = 10*5 # max size of replay_memory
+memory_start_size = 100 # amount of transitions in memory before learning from it
 max_frames = 10**7
 max_episodes = 10**3
 dqn_old = dqn # recording of the NN's old weights (learning stabilization)
 reload_model = 4*10**4
-gamma = .9 # discount factor
+gamma = .95 # discount factor
 frameskip = 4 # number of frames during which to spam the same action (not learn)
 batch_size = 32 # amount of elements sampled from the replay_memory
 frame = 0 # frame number, throughout the whole, main loop.
@@ -37,7 +38,7 @@ frame = 0 # frame number, throughout the whole, main loop.
 ## Main loop
 for i_episode in range(max_episodes):
     # init observation
-    observation = env.reset()
+    observation = env.reset()/255
     done = False
 
     #Game loop
@@ -48,18 +49,23 @@ for i_episode in range(max_episodes):
         action = eps_greedy(epsilon, n_actions, dqn, observation)
         obs_old = observation
         observation, reward, done, info = env.step(action)
+        observation /= 255
         if len(replay_memory) > max_memory:
             replay_memory.pop(0)
+
         replay_memory.append((obs_old, action, reward, observation))
-        if len(replay_memory) > batch_size:
-            mini_batch = random.choice(replay_memory, batch_size)
-            dqn.train_on_batch()
+        if len(replay_memory) > memory_start_size:
+            mini_batch = np.array(random.choice(replay_memory, batch_size))
+            # 0: state, 1: action, 2: reward, 3: state'
+
+            td_target = mini_batch[:,2] + gamma*
+            dqn.train_on_batch(mini_batch[:,0], td_target)
 
 
         frame += 1
 
         if done:
-            print("Episode finished after {} timesteps".format(t+1))
+            print("Episode finished after {} timesteps".format(frame+1))
 
     if frame > max_frames:
         break
