@@ -1,12 +1,15 @@
 import gym
+import time
+
 env = gym.make('Breakout-v0')
+frame = 0
 for i_episode in range(20):
     observation = env.reset()
-    for t in range(100):
+    done = False
+    while not done:
+        frame += 1
         env.render()
-        print(observation)
-        action = env.action_space.sample()
+        time.sleep(.05)
+        action = 1 if frame == 1 else 2
+        print(action)
         observation, reward, done, info = env.step(action)
-        if done:
-            print("Episode finished after {} timesteps".format(t+1))
-            break

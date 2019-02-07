@@ -6,9 +6,12 @@ def decay_epsilon(frame, min_decay, no_decay_threshold):
     return min_decay if (frame > no_decay_threshold)\
                      else (min_decay-1)*frame/no_decay_threshold +1
 
+def greedy(dqn, obs) :
+  return np.argmax(dqn.predict(np.array([obs])))
+
 def eps_greedy(epsilon, n_actions, dqn, obs):
     return np.random.randint(n_actions) if (np.random.rand(1) < epsilon)\
-        else np.argmax(dqn.predict(np.array([obs])))
+        else greedy(dqn, obs)
 
 def train_dqn(dqn, old_dqn, states, actions, rewards, new_states, gamma):
     # record predictions q(s,a) so only the performed action is modified
@@ -21,5 +24,5 @@ def train_dqn(dqn, old_dqn, states, actions, rewards, new_states, gamma):
     for i, action in enumerate(actions):
         # reach cell q(s,a) of performed action in state s
         q_targets[i][action] = rewards[i] + gamma*max_new_q[i]
-        
+
     dqn.train_on_batch(states, q_targets)
