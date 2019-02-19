@@ -50,6 +50,7 @@ epoch_record = [] # average scores per epoch
 ## Main loop
 while len(epoch_record) < max_epoch:
     # init observation
+    print("\tEp : ", i_episode) 
     observation = preprocess(env.reset())
     done = False
     cumul_score = 0
@@ -81,7 +82,6 @@ while len(epoch_record) < max_epoch:
 
         # learning
         if (len(replay_memory) > memory_start_size) and (frame % update_freq == 0):
-            #mini_batch = np.array(random.choices(replay_memory, k=batch_size))
             mini_batch = extract_mini_batch(replay_memory, batch_size, \
                                             agent_history_length)
             train_dqn(dqn, old_dqn, mini_batch, gamma)
