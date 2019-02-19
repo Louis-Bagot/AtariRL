@@ -12,7 +12,7 @@ def generate_input_from_index(i, replay_memory, agent_history_length):
     """Generates a DQN-predictable input from index i of replay_memory"""
     last_frames = replay_memory[(i-agent_history_length+1):(i+1)] # isolate seq
     states = np.array(last_frames)[:,0]/255 # isolate states and normalize
-    return np.rollaxis(np.stack(states),0,3) # correct format and channels order
+    return np.stack(states)
 
 def extract_mini_batch(replay_memory, batch_size, agent_history_length):
     # first randomly select the indexes
@@ -40,8 +40,7 @@ def decay_epsilon(frame, min_decay, no_decay_threshold):
                      else (min_decay-1)*frame/no_decay_threshold +1
 
 def greedy(dqn, frame_seq):
-    with tf.device('/gpu:0'):
-        return np.argmax(dqn.predict(np.array([frame_seq])))
+    return np.argmax(dqn.predict(np.array([frame_seq])))
 
 def random_action(n_actions):
     return np.random.randint(n_actions)
@@ -75,8 +74,7 @@ def train_dqn(dqn, old_dqn, mini_batch, gamma):
         # reach cell q(s,a) of performed action in state s.
         q_targets[i][action] = rewards[i] + (1-dones[i])*gamma*max_new_q[i]
 
-    with tf.device('/gpu:0'):
-        dqn.train_on_batch(states, q_targets)
+    dqn.train_on_batch(states, q_targets)
 
 
 def test_dqn(game, test_explo, dqn, agent_history_length):
