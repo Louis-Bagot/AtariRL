@@ -1,10 +1,11 @@
 import matplotlib.pyplot as plt
+import matplotlib
 from dqn_functions import *
 
 def graph(l, title):
     plt.plot(l)
     plt.ylabel(title)
-    plt.show()
+    plt.savefig('../graphic/perf.png')
 
 def print_info(frame, episode, epoch_nb, memory_usage, memory_capacity):
     print("Epoch ", epoch_nb)
