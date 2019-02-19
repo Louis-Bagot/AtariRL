@@ -18,7 +18,7 @@ model.compile(optimizer='adam',
               loss='sparse_categorical_crossentropy',
               metrics=['accuracy'])
 
-model.fit(x_train, y_train, epochs=1)
-model.evaluate(x_test, y_test)
-
-print(model.predict(np.array([np.ones((28,28))])))
+with tf.device('gpu:0'):
+    model.fit(x_train, y_train, epochs=1)
+    model.evaluate(x_test, y_test)
+    print(model.predict(np.array([np.ones((28,28))])))
