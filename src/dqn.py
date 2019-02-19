@@ -93,3 +93,5 @@ while len(epoch_record) < max_epoch:
             epoch_record.append(test_dqn(game, .05, dqn, agent_history_length))
             graph(epoch_record, 'Average score per epoch')
     i_episode += 1
+
+keep_playing(game, .05, dqn, agent_history_length)
