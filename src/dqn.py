@@ -31,6 +31,7 @@ batch_size = 32 # amount of elements sampled from the replay_memory
 (min_decay, no_decay_threshold) = (.1, 10**6)
 update_freq = 4 # actions taken before learning on a batch
 epoch_size = 5*10**4 # number of frames (training batches) within an epoch
+test_explo = 0.05
 
 # Results display variables
 replay_memory = [] # replay memory to learn smoothly from the past
@@ -52,7 +53,7 @@ while len(epoch_record) < max_epoch:
         # take action; or act randomly if memory is too small
         if (frame > memory_start_size):
             if (frame > agent_history_length):
-                action = eps_greedy(test_explo, n_actions, dqn,replay_memory,\
+                action = eps_greedy(epsilon, n_actions, dqn,replay_memory,\
                                     agent_history_length, new_algo)
 
         else : action = random_action(n_actions)
@@ -77,7 +78,7 @@ while len(epoch_record) < max_epoch:
             mini_batch = extract_mini_batch(replay_memory, batch_size, \
                                             agent_history_length)
             if new_algo:
-                train_dqn2(dqn, old_dqn, mini_batch, gamma)
+                train_dqn2(dqn, old_dqn, mini_batch, gamma, n_actions)
             else :
                 train_dqn(dqn, old_dqn, mini_batch, gamma)
 
@@ -85,7 +86,7 @@ while len(epoch_record) < max_epoch:
 
         if (frame % epoch_size == 0):
             print_info(frame, i_episode, len(epoch_record), len(replay_memory), max_memory, epsilon)
-            epoch_record.append(test_dqn(game, .05, dqn, agent_history_length, new_algo))
+            epoch_record.append(test_dqn(game, test_explo, dqn, agent_history_length, new_algo))
             graph(epoch_record, 'Average score per epoch')
     i_episode += 1
 
