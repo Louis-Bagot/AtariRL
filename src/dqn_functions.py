@@ -4,6 +4,38 @@ import gym
 import time
 import random
 
+def init_DQN(atari_shape,n_actions):
+    dqn = tf.keras.models.Sequential([ # dqn, with as many outputs as actions
+        tf.keras.layers.Conv2D(filters = 32, kernel_size = (8,8), strides=(4,4), \
+            activation=tf.nn.relu, input_shape=atari_shape, data_format='channels_first'),
+        tf.keras.layers.Conv2D(filters = 64, kernel_size = (4,4),\
+            strides=(2,2), activation=tf.nn.relu),
+        tf.keras.layers.Conv2D(filters = 64, kernel_size = (3,3),\
+            strides=(1,1), activation=tf.nn.relu),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(512, activation=tf.nn.relu),
+        tf.keras.layers.Dense(n_actions)
+    ])
+    rms_opti = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
+    dqn.compile(optimizer=rms_opti,loss='logcosh')
+    return dqn
+
+def init_DQN2(atari_shape,n_actions):
+    dqn = tf.keras.models.Sequential([ # dqn, with as many outputs as actions
+        tf.keras.layers.Conv2D(filters = 32, kernel_size = (8,8), strides=(4,4), \
+            activation=tf.nn.relu, input_shape=atari_shape, data_format='channels_first'),
+        tf.keras.layers.Conv2D(filters = 64, kernel_size = (4,4),\
+            strides=(2,2), activation=tf.nn.relu),
+        tf.keras.layers.Conv2D(filters = 64, kernel_size = (3,3),\
+            strides=(1,1), activation=tf.nn.relu),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(512, activation=tf.nn.relu),
+        tf.keras.layers.Dense(n_actions)
+    ])
+    rms_opti = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
+    dqn.compile(optimizer=rms_opti,loss='logcosh')
+    return dqn
+
 def preprocess(image):
     """Preprocessing : grayscaling, converting back to int, down-sampling"""
     return np.mean(image, axis=2).astype(np.uint8)[::2,::2]
@@ -74,7 +106,6 @@ def train_dqn(dqn, old_dqn, mini_batch, gamma):
         # reach cell q(s,a) of performed action in state s.
         q_targets[i][action] = rewards[i] + (1-dones[i])*gamma*max_new_q[i]
 
-    print("now training")
     dqn.train_on_batch(states, q_targets)
 
 

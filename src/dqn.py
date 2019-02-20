@@ -17,20 +17,7 @@ n_actions = env.action_space.n
 agent_history_length = 4 # number of frames the agent sees when acting
 atari_shape = (agent_history_length,105,80)
 
-dqn = tf.keras.models.Sequential([ # dqn, with as many outputs as actions
-    tf.keras.layers.Conv2D(filters = 32, kernel_size = (8,8), strides=(4,4), \
-        activation=tf.nn.relu, input_shape=atari_shape, data_format='channels_first'),
-    tf.keras.layers.Conv2D(filters = 64, kernel_size = (4,4),\
-        strides=(2,2), activation=tf.nn.relu),
-    tf.keras.layers.Conv2D(filters = 64, kernel_size = (3,3),\
-        strides=(1,1), activation=tf.nn.relu),
-    tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(512, activation=tf.nn.relu),
-    tf.keras.layers.Dense(n_actions)
-])
-
-rms_opti = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
-dqn.compile(optimizer=rms_opti,loss='logcosh')
+dqn = init_DQN(atari_shape,n_actions)
 
 # miscellanous initializations of variables or hyperparameters
 max_memory = 3*10**5 # max size of replay_memory
