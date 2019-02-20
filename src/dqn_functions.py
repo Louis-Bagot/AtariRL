@@ -74,6 +74,7 @@ def train_dqn(dqn, old_dqn, mini_batch, gamma):
         # reach cell q(s,a) of performed action in state s.
         q_targets[i][action] = rewards[i] + (1-dones[i])*gamma*max_new_q[i]
 
+    print("now training")
     dqn.train_on_batch(states, q_targets)
 
 

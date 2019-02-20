@@ -19,13 +19,13 @@ atari_shape = (agent_history_length,105,80)
 
 dqn = tf.keras.models.Sequential([ # dqn, with as many outputs as actions
     tf.keras.layers.Conv2D(filters = 32, kernel_size = (8,8), strides=(4,4), \
-        activation='relu', input_shape=atari_shape, data_format='channels_first'),
+        activation=tf.nn.relu, input_shape=atari_shape, data_format='channels_first'),
     tf.keras.layers.Conv2D(filters = 64, kernel_size = (4,4),\
-        strides=(2,2), activation='relu'),
-    tf.keras.layers.Conv2D(filters = 32, kernel_size = (3,3),\
-        strides=(1,1), activation='relu'),
+        strides=(2,2), activation=tf.nn.relu),
+    tf.keras.layers.Conv2D(filters = 64, kernel_size = (3,3),\
+        strides=(1,1), activation=tf.nn.relu),
     tf.keras.layers.Flatten(),
-    tf.keras.layers.Dense(512, activation='relu'),
+    tf.keras.layers.Dense(512, activation=tf.nn.relu),
     tf.keras.layers.Dense(n_actions)
 ])
 
@@ -52,10 +52,9 @@ epoch_record = [] # average scores per epoch
 ## Main loop
 while len(epoch_record) < max_epoch:
     # init observation
-    print("\tEp : ", i_episode) 
+    print("\tEp : ", i_episode)
     observation = preprocess(env.reset())
     done = False
-    cumul_score = 0
     #Game loop
     while not done:
         # update decaying exploration parameter
@@ -71,7 +70,6 @@ while len(epoch_record) < max_epoch:
         observation, reward, done, info = env.step(action)
         observation = preprocess(observation)
         reward = np.sign(reward)
-        cumul_score += reward
 
         # Replay memory. Discard the obs_old idea since it's above in memory
         replay_memory.append((observation, action, reward, done))
@@ -80,6 +78,7 @@ while len(epoch_record) < max_epoch:
 
         # old parameters recording
         if (frame % reload_model == 0):
+            print("Reloading model")
             old_dqn = copy_model(dqn) # recording of the NN's old weights
 
         # learning
@@ -91,7 +90,7 @@ while len(epoch_record) < max_epoch:
         frame += 1
 
         if (frame % epoch_size == 0):
-            print_info(frame, i_episode, len(epoch_record), len(replay_memory), max_memory)
+            print_info(frame, i_episode, len(epoch_record), len(replay_memory), max_memory, epsilon)
             epoch_record.append(test_dqn(game, .05, dqn, agent_history_length))
             graph(epoch_record, 'Average score per epoch')
     i_episode += 1

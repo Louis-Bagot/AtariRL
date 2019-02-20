@@ -7,11 +7,12 @@ def graph(l, title):
     plt.ylabel(title)
     plt.savefig('../graphic/perf.png')
 
-def print_info(frame, episode, epoch_nb, memory_usage, memory_capacity):
+def print_info(frame, episode, epoch_nb, memory_usage, memory_capacity, epsilon):
     print("Epoch ", epoch_nb)
     print("\tEpisode ", episode)
     print("\tFrame ", frame)
     print("\tMemory used ", memory_usage, "/", memory_capacity)
+    print("\tExplo ", epsilon)
 
 def get_frames_from_game(env, dqn):
     observation = env.reset()
