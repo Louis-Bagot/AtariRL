@@ -27,25 +27,28 @@ def init_DQN2(atari_shape,n_actions):
 
     # "The first hidden layer convolves 16 8×8 filters with stride 4 with the input image and applies a rectifier nonlinearity."
     conv_1 = tf.keras.layers.Conv2D(
-        16, (8, 8), strides=(4, 4), activation=tf.nn.relu
+        16, (8, 8), strides=(4, 4), activation=tf.nn.relu, data_format="channels_first"
     )(frames_input)
     # "The second hidden layer convolves 32 4×4 filters with stride 2, again followed by a rectifier nonlinearity."
     conv_2 = tf.keras.layers.Conv2D(
         32, (4, 4), strides=(2, 2), activation=tf.nn.relu
     )(conv_1)
     # Flattening the second convolutional layer.
-    conv_flattened = tf.keras.layers.core.Flatten()(conv_2)
+    conv_flattened = tf.keras.layers.Flatten()(conv_2)
     # "The final hidden layer is fully-connected and consists of 256 rectifier units."
     hidden = tf.keras.layers.Dense(256, activation=tf.nn.relu)(conv_flattened)
     # "The output layer is a fully-connected linear layer with a single output for each valid action."
     output = tf.keras.layers.Dense(n_actions)(hidden)
     # Finally, we multiply the output by the mask!
-    filtered_output = tf.keras.layers.merge([output, actions_input], mode='mul')
+    filtered_output = tf.keras.layers.Multiply()([output,actions_input])
 
-    dqn = tf.keras.models.Model(input=[frames_input, actions_input], output=filtered_output)
+    dqn = tf.keras.models.Model(inputs=[frames_input, actions_input], outputs=filtered_output)
     optimizer = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
     dqn.compile(optimizer, loss='logcosh')
     return dqn
+
+def one_hot(a, num_classes):
+    return np.squeeze(np.eye(num_classes)[a.reshape(-1)])
 
 def preprocess(image):
     """Preprocessing : grayscaling, converting back to int, down-sampling"""
@@ -82,17 +85,18 @@ def decay_epsilon(frame, min_decay, no_decay_threshold):
     return min_decay if (frame > no_decay_threshold)\
                      else (min_decay-1)*frame/no_decay_threshold +1
 
-def greedy(dqn, frame_seq):
-    return np.argmax(dqn.predict(np.array([frame_seq])))
+def greedy(dqn, frame_seq, new_algo):
+    return np.argmax(dqn.predict(np.array([frame_seq]))) if not new_algo else\
+           np.argmax(dqn.predict([frame_seq, np.ones(n_actions)]))
 
 def random_action(n_actions):
     return np.random.randint(n_actions)
 
-def eps_greedy(epsilon, n_actions, dqn, replay_memory, agent_history_length):
+def eps_greedy(epsilon, n_actions, dqn, replay_memory, agent_history_length, new_algo):
     return random_action(n_actions) if (np.random.rand(1) < epsilon)\
         else greedy(dqn, generate_input_from_index(len(replay_memory)-1, \
                                                    replay_memory, \
-                                                   agent_history_length))
+                                                   agent_history_length), new_algo)
 
 def copy_model(model):
     """Returns a copy of a keras model."""
@@ -119,8 +123,22 @@ def train_dqn(dqn, old_dqn, mini_batch, gamma):
 
     dqn.train_on_batch(states, q_targets)
 
+def train_dqn2(dqn, old_dqn, mini_batch, gamma, n_actions):
+    # extract s a r s' from mini_batch; and the terminal states
+    states =  np.stack(mini_batch[:,0], axis=0)
+    actions = one_hot(mini_batch[:,1], n_actions)
+    rewards = mini_batch[:,2]
+    new_states =  np.stack(mini_batch[:,3], axis=0)
+    dones = np.array(mini_batch[:,4])
+    # compute the max over rows of q(s',.; theta-) ie old values of dqn
+    new_q_values = old_dqn.predict([new_states, np.ones(n_actions)])
+    new_q_values[dones] = 0
+    # q update: reward + gamma * max new state q
+    q_targets = rewards + gamma * np.max(new_q_values, axis=1)
+    dqn.fit([start_states, actions], actions * q_targets[:, None],\
+            nb_epoch=1, batch_size=len(start_states), verbose=0)
 
-def test_dqn(game, test_explo, dqn, agent_history_length):
+def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
     print("\tEntering test phase...")
     env = gym.make(game) # environment
     n_actions = env.action_space.n
@@ -138,8 +156,8 @@ def test_dqn(game, test_explo, dqn, agent_history_length):
         #Game loop
         while not done:
             if (frame > agent_history_length):
-                action = eps_greedy(test_explo, n_actions, dqn, replay_memory,\
-                                    agent_history_length)
+                action = eps_greedy(test_explo, n_actions, dqn,replay_memory,\
+                                    agent_history_length, new_algo)
             else : action = random_action(n_actions)
 
             observation, reward, done, info = env.step(action)
@@ -160,7 +178,7 @@ def test_dqn(game, test_explo, dqn, agent_history_length):
     print("\tReturning ", avg_score)
     return avg_score
 
-def keep_playing(game, test_explo, dqn, agent_history_length):
+def keep_playing(game, test_explo, dqn, agent_history_length, new_algo):
     print("Now showing off them mad skillz")
     env = gym.make(game) # environment
     n_actions = env.action_space.n
@@ -178,7 +196,7 @@ def keep_playing(game, test_explo, dqn, agent_history_length):
         while not done:
             if (frame > agent_history_length):
                 action = eps_greedy(test_explo, n_actions, dqn, replay_memory,\
-                                    agent_history_length)
+                                    agent_history_length, new_algo)
             else : action = random_action(n_actions)
             env.render()
             time.sleep(.05)
