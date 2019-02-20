@@ -8,7 +8,7 @@ from dqn_functions import *
 from display import *
 
 """Deep Q Network Algorithm"""
-
+new_algo = True
 ## Initializations : environment
 game = 'Breakout-v0'
 env = gym.make(game) # environment
@@ -17,7 +17,9 @@ n_actions = env.action_space.n
 agent_history_length = 4 # number of frames the agent sees when acting
 atari_shape = (agent_history_length,105,80)
 
-dqn = init_DQN2(atari_shape,n_actions)
+
+dqn = init_DQN2(atari_shape,n_actions) if new_algo\
+ else init_DQN(atari_shape, n_actions)
 
 # miscellanous initializations of variables or hyperparameters
 max_memory = 3*10**5 # max size of replay_memory
@@ -49,8 +51,10 @@ while len(epoch_record) < max_epoch:
 
         # take action; or act randomly if memory is too small
         if (frame > memory_start_size):
-            action = eps_greedy(epsilon, n_actions, dqn, replay_memory, \
-                                agent_history_length)
+            if (frame > agent_history_length):
+                action = eps_greedy(test_explo, n_actions, dqn,replay_memory,\
+                                    agent_history_length, new_algo)
+
         else : action = random_action(n_actions)
 
         # env step; data cleaning
@@ -72,14 +76,17 @@ while len(epoch_record) < max_epoch:
         if (len(replay_memory) > memory_start_size) and (frame % update_freq == 0):
             mini_batch = extract_mini_batch(replay_memory, batch_size, \
                                             agent_history_length)
-            train_dqn(dqn, old_dqn, mini_batch, gamma)
+            if new_algo:
+                train_dqn2(dqn, old_dqn, mini_batch, gamma)
+            else :
+                train_dqn(dqn, old_dqn, mini_batch, gamma)
 
         frame += 1
 
         if (frame % epoch_size == 0):
             print_info(frame, i_episode, len(epoch_record), len(replay_memory), max_memory, epsilon)
-            epoch_record.append(test_dqn(game, .05, dqn, agent_history_length))
+            epoch_record.append(test_dqn(game, .05, dqn, agent_history_length, new_algo))
             graph(epoch_record, 'Average score per epoch')
     i_episode += 1
 
-keep_playing(game, .05, dqn, agent_history_length)
+keep_playing(game, .05, dqn, agent_history_length, new_algo)
