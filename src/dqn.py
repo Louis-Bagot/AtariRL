@@ -10,19 +10,18 @@ from display import *
 """Deep Q Network Algorithm"""
 new_algo = True
 ## Initializations : environment
-game = 'Breakout-v0'
+game = 'BreakoutDeterministic-v4'
 env = gym.make(game) # environment
 n_actions = env.action_space.n
 # DQN
 agent_history_length = 4 # number of frames the agent sees when acting
 atari_shape = (agent_history_length,105,80)
 
-
 dqn = init_DQN2(atari_shape,n_actions) if new_algo\
  else init_DQN(atari_shape, n_actions)
 
 # miscellanous initializations of variables or hyperparameters
-max_memory = 3*10**5 # max size of replay_memory
+max_memory = 4*10**5 # max size of replay_memory
 memory_start_size = 5*10**4 # amount of transitions in memory before using it
 max_epoch = 10**2
 reload_model = 10**4 # frame frequency of nn parameters reloading
@@ -52,10 +51,8 @@ while len(epoch_record) < max_epoch:
 
         # take action; or act randomly if memory is too small
         if (frame > memory_start_size):
-            if (frame > agent_history_length):
-                action = eps_greedy(epsilon, n_actions, dqn,replay_memory,\
-                                    agent_history_length, new_algo)
-
+            action = eps_greedy(epsilon, n_actions, dqn,replay_memory,\
+                                agent_history_length, new_algo)
         else : action = random_action(n_actions)
 
         # env step; data cleaning

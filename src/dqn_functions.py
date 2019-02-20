@@ -39,7 +39,7 @@ def init_DQN2(atari_shape,n_actions):
     hidden = tf.keras.layers.Dense(256, activation=tf.nn.relu)(conv_flattened)
     # "The output layer is a fully-connected linear layer with a single output for each valid action."
     output = tf.keras.layers.Dense(n_actions)(hidden)
-    # Finally, we multiply the output by the mask!
+    # Finally, we multiply the output by the mask
     filtered_output = tf.keras.layers.Multiply()([output,actions_input])
 
     dqn = tf.keras.models.Model(inputs=[frames_input, actions_input], outputs=filtered_output)
@@ -51,8 +51,8 @@ def one_hot(a, num_classes):
     return np.squeeze(np.eye(num_classes)[a.reshape(-1)])
 
 def preprocess(image):
-    """Preprocessing : grayscaling, converting back to int, down-sampling"""
-    return np.mean(image, axis=2).astype(np.uint8)[::2,::2]
+    """Preprocessing : grayscaling, down-sampling"""
+    return np.max(image, axis=2)[::2,::2]
 
 def generate_input_from_index(i, replay_memory, agent_history_length):
     """Generates a DQN-predictable input from index i of replay_memory"""
@@ -66,8 +66,7 @@ def extract_mini_batch(replay_memory, batch_size, agent_history_length):
                                            len(replay_memory)-1), \
                                      batch_size, replace=False)
     mini_batch = []
-    for i in range(batch_size):
-        index = batch_indexes[i] # we'll be needing thismany times
+    for index in batch_indexes:
         state = generate_input_from_index(index, replay_memory, \
                                           agent_history_length)
         new_state = generate_input_from_index(index +1, replay_memory,\
