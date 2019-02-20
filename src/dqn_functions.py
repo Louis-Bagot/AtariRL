@@ -21,19 +21,30 @@ def init_DQN(atari_shape,n_actions):
     return dqn
 
 def init_DQN2(atari_shape,n_actions):
-    dqn = tf.keras.models.Sequential([ # dqn, with as many outputs as actions
-        tf.keras.layers.Conv2D(filters = 32, kernel_size = (8,8), strides=(4,4), \
-            activation=tf.nn.relu, input_shape=atari_shape, data_format='channels_first'),
-        tf.keras.layers.Conv2D(filters = 64, kernel_size = (4,4),\
-            strides=(2,2), activation=tf.nn.relu),
-        tf.keras.layers.Conv2D(filters = 64, kernel_size = (3,3),\
-            strides=(1,1), activation=tf.nn.relu),
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(512, activation=tf.nn.relu),
-        tf.keras.layers.Dense(n_actions)
-    ])
-    rms_opti = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
-    dqn.compile(optimizer=rms_opti,loss='logcosh')
+    # With the functional API we need to define the inputs.
+    frames_input = tf.keras.layers.Input(atari_shape, name='frames')
+    actions_input = tf.keras.layers.Input((n_actions,), name='mask')
+
+    # "The first hidden layer convolves 16 8×8 filters with stride 4 with the input image and applies a rectifier nonlinearity."
+    conv_1 = tf.keras.layers.convolutional.Convolution2D(
+        16, 8, 8, subsample=(4, 4), activation='relu'
+    )(frames_input)
+    # "The second hidden layer convolves 32 4×4 filters with stride 2, again followed by a rectifier nonlinearity."
+    conv_2 = tf.keras.layers.convolutional.Convolution2D(
+        32, 4, 4, subsample=(2, 2), activation='relu'
+    )(conv_1)
+    # Flattening the second convolutional layer.
+    conv_flattened = tf.keras.layers.core.Flatten()(conv_2)
+    # "The final hidden layer is fully-connected and consists of 256 rectifier units."
+    hidden = tf.keras.layers.Dense(256, activation='relu')(conv_flattened)
+    # "The output layer is a fully-connected linear layer with a single output for each valid action."
+    output = tf.keras.layers.Dense(n_actions)(hidden)
+    # Finally, we multiply the output by the mask!
+    filtered_output = tf.keras.layers.merge([output, actions_input], mode='mul')
+
+    dqn = tf.keras.models.Model(input=[frames_input, actions_input], output=filtered_output)
+    optimizer = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
+    dqn.compile(optimizer, loss='mse')
     return dqn
 
 def preprocess(image):

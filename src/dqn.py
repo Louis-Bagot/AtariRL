@@ -17,7 +17,7 @@ n_actions = env.action_space.n
 agent_history_length = 4 # number of frames the agent sees when acting
 atari_shape = (agent_history_length,105,80)
 
-dqn = init_DQN(atari_shape,n_actions)
+dqn = init_DQN2(atari_shape,n_actions)
 
 # miscellanous initializations of variables or hyperparameters
 max_memory = 3*10**5 # max size of replay_memory
