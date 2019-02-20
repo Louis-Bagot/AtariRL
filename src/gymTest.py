@@ -46,7 +46,8 @@ dqn = tf.keras.models.Sequential([ # dqn, with as many outputs as actions
     tf.keras.layers.Dense(512, activation='relu'),
     tf.keras.layers.Dense(n_actions)
 ])
-
+rms_opti = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
+dqn.compile(optimizer=rms_opti,loss='logcosh')
 
 test_dqn(game, .05, dqn, agent_history_length)
 
