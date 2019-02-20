@@ -85,9 +85,9 @@ def decay_epsilon(frame, min_decay, no_decay_threshold):
     return min_decay if (frame > no_decay_threshold)\
                      else (min_decay-1)*frame/no_decay_threshold +1
 
-def greedy(dqn, frame_seq, new_algo):
+def greedy(dqn, frame_seq, new_algo, n_actions):
     return np.argmax(dqn.predict(np.array([frame_seq]))) if not new_algo else\
-           np.argmax(dqn.predict([frame_seq, np.ones(n_actions)]))
+           np.argmax(dqn.predict([np.array([frame_seq]), np.array([np.ones(n_actions)])]))
 
 def random_action(n_actions):
     return np.random.randint(n_actions)
@@ -96,7 +96,8 @@ def eps_greedy(epsilon, n_actions, dqn, replay_memory, agent_history_length, new
     return random_action(n_actions) if (np.random.rand(1) < epsilon)\
         else greedy(dqn, generate_input_from_index(len(replay_memory)-1, \
                                                    replay_memory, \
-                                                   agent_history_length), new_algo)
+                                                   agent_history_length), \
+                    new_algo, n_actions)
 
 def copy_model(model):
     """Returns a copy of a keras model."""
@@ -126,17 +127,17 @@ def train_dqn(dqn, old_dqn, mini_batch, gamma):
 def train_dqn2(dqn, old_dqn, mini_batch, gamma, n_actions):
     # extract s a r s' from mini_batch; and the terminal states
     states =  np.stack(mini_batch[:,0], axis=0)
-    actions = one_hot(mini_batch[:,1], n_actions)
+    actions = one_hot(mini_batch[:,1].astype(np.int8), n_actions)
     rewards = mini_batch[:,2]
     new_states =  np.stack(mini_batch[:,3], axis=0)
-    dones = np.array(mini_batch[:,4])
+    dones = np.array(mini_batch[:,4]).astype(np.bool)
     # compute the max over rows of q(s',.; theta-) ie old values of dqn
-    new_q_values = old_dqn.predict([new_states, np.ones(n_actions)])
+    new_q_values = old_dqn.predict([new_states, np.ones(actions.shape)])
     new_q_values[dones] = 0
     # q update: reward + gamma * max new state q
     q_targets = rewards + gamma * np.max(new_q_values, axis=1)
-    dqn.fit([start_states, actions], actions * q_targets[:, None],\
-            nb_epoch=1, batch_size=len(start_states), verbose=0)
+    dqn.fit([states, actions], actions * q_targets[:, None],\
+            epochs=1, batch_size=len(states), verbose=0)
 
 def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
     print("\tEntering test phase...")
