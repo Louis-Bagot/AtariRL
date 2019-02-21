@@ -21,7 +21,7 @@ dqn = init_DQN2(atari_shape,n_actions) if new_algo\
  else init_DQN(atari_shape, n_actions)
 
 # miscellanous initializations of variables or hyperparameters
-max_memory = 4*10**5 # max size of replay_memory
+max_memory = 3*10**5 # max size of replay_memory
 memory_start_size = 5*10**4 # amount of transitions in memory before using it
 max_epoch = 10**2
 reload_model = 10**4 # frame frequency of nn parameters reloading
