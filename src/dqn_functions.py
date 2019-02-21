@@ -155,7 +155,7 @@ def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
         cumul_score = 0 #episode total score
         #Game loop
         while not done:
-            if (frame > agent_history_length):
+            if (frame > max_memory):
                 action = eps_greedy(test_explo, n_actions, dqn,replay_memory,\
                                     agent_history_length, new_algo)
             else : action = random_action(n_actions)
@@ -177,38 +177,3 @@ def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
     avg_score = np.mean(score_record)
     print("\tReturning ", avg_score)
     return avg_score
-
-def keep_playing(game, test_explo, dqn, agent_history_length, new_algo):
-    print("Now showing off them mad skillz")
-    env = gym.make(game) # environment
-    n_actions = env.action_space.n
-    replay_memory = []
-    max_memory = agent_history_length
-    score_record = [] # episode scores over time (episodes)
-    frame = 0
-    ## Play forever
-    while True:
-        # init observation
-        observation = preprocess(env.reset())
-        done = False
-        cumul_score = 0 #episode total score
-        #Game loop
-        while not done:
-            if (frame > agent_history_length):
-                action = eps_greedy(test_explo, n_actions, dqn, replay_memory,\
-                                    agent_history_length, new_algo)
-            else : action = random_action(n_actions)
-            env.render()
-            time.sleep(.05)
-            observation, reward, done, info = env.step(action)
-            observation = preprocess(observation)
-            reward = np.sign(reward)
-            cumul_score += reward
-            frame += 1
-
-            # replay memory handling
-            replay_memory.append((observation, action, reward, done))
-            if len(replay_memory) > max_memory:
-                replay_memory.pop(0)
-
-        print("\tScore on this episode : ", cumul_score)

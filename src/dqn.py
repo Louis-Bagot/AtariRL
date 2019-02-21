@@ -23,14 +23,14 @@ dqn = init_DQN2(atari_shape,n_actions) if new_algo\
 # miscellanous initializations of variables or hyperparameters
 max_memory = 3*10**5 # max size of replay_memory
 memory_start_size = 5*10**4 # amount of transitions in memory before using it
+epoch_size = 5*10**4 # number of frames (training batches) within an epoch
 max_epoch = 10**2
 reload_model = 10**4 # frame frequency of nn parameters reloading
 gamma = .99 # discount factor
 batch_size = 32 # amount of elements sampled from the replay_memory
 (min_decay, no_decay_threshold) = (.1, 10**6)
-update_freq = 4 # actions taken before learning on a batch
-epoch_size = 5*10**4 # number of frames (training batches) within an epoch
 test_explo = 0.05
+update_freq = 4 # actions taken before learning on a batch
 
 # Results display variables
 replay_memory = [] # replay memory to learn smoothly from the past
