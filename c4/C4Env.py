@@ -19,7 +19,7 @@ class C4Env():
         o = self.board.fields2channels()
         d = bool(self.board.won())
         r = self.board.opponent if d else 0 # already switched
-        if not any(self.board.legal_moves()):
+        if not any(self.legal_moves()):
             d = True
             r = 0
         i = ""
@@ -29,3 +29,5 @@ class C4Env():
         moves = np.array(range(self.board.width))
         return np.random.choice(moves[self.board.legal_moves()])
 
+    def legal_moves(self):
+        return self.board.legal_moves()
