@@ -4,26 +4,6 @@ import gym
 import time
 import random
 
-
-def init_A4(c4_shape,n_actions):
-    # With the functional API we need to define the inputs.
-    board_input = tf.keras.layers.Input(c4_shape, name='board')
-
-    # The first hidden layer convolves 16 4×4 filters with stride 1 with the input image and applies a rectifier nonlinearity.
-    conv_1 = tf.keras.layers.Conv2D(16, (4, 4), strides=(1, 1), activation=tf.nn.relu)(board_input)
-    # Flattening the convolutional layer.
-    conv_flattened = tf.keras.layers.Flatten()(conv_1)
-    # The final hidden layer is fully-connected and consists of 64 rectifier units.
-    hidden = tf.keras.layers.Dense(64, activation=tf.nn.relu)(conv_flattened)
-    # "The output layer is a fully-connected linear layer with a single output for each valid action."
-    output_policy = tf.keras.layers.Dense(n_actions, activation=tf.nn.softmax, name='policy')(hidden)
-    output_value = tf.keras.layers.Dense(1, name='value_fun')(hidden)
-
-    dqn = tf.keras.models.Model(inputs=board_input, outputs=[output_policy, output_value])
-    optimizer = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
-    dqn.compile(optimizer, loss='logcosh')
-    return dqn
-
 def one_hot(a, num_classes):
     return np.squeeze(np.eye(num_classes)[a.reshape(-1)])
 
