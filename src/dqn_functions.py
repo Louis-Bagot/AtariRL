@@ -17,7 +17,7 @@ def init_DQN(atari_shape,n_actions):
         tf.keras.layers.Dense(n_actions)
     ])
     rms_opti = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
-    dqn.compile(optimizer=rms_opti,loss='logcosh')
+    dqn.compile(optimizer=rms_opti,loss='mse')
     return dqn
 
 def init_DQN2(atari_shape,n_actions):
@@ -44,7 +44,7 @@ def init_DQN2(atari_shape,n_actions):
 
     dqn = tf.keras.models.Model(inputs=[frames_input, actions_input], outputs=filtered_output)
     optimizer = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
-    dqn.compile(optimizer, loss='logcosh')
+    dqn.compile(optimizer, loss='mse')
     return dqn
 
 def one_hot(a, num_classes):
