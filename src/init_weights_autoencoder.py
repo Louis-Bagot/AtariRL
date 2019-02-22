@@ -49,8 +49,8 @@ n_actions = env.action_space.n
 agent_history_length = 4 # number of frames the agent sees when acting
 atari_shape = (agent_history_length, 128, 96)
 
-#
-#
+
+
 # # Encoder part
 # frames_input = tf.keras.layers.Input(atari_shape, name='frames')
 # actions_input = tf.keras.layers.Input((n_actions,), name='mask')
@@ -96,13 +96,16 @@ autoencoder.summary()
 rms_opti = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
 autoencoder.compile(optimizer='adam',loss='mse')
 
-
 observation = preprocess(env.reset())
 observation = imresize(observation,(128,96))
 # plt.imshow(observation)
 # plt.show()
+
+counter = 0
 ## Play forever
 while True:
+    counter +=1
+
     # init observation
     observation = preprocess(env.reset())
     done = False
@@ -131,3 +134,7 @@ while True:
         if len(one_instance) == agent_history_length:
             batch.append(one_instance)
             one_instance.pop(0) # Remove one instance
+
+
+        if counter % 10 == 0:
+            autoencoder.save_weights()
