@@ -7,10 +7,11 @@ import matplotlib.pyplot as plt
 from dqn_functions import *
 from display import *
 
+graph(0, "test display")
 """Deep Q Network Algorithm"""
 new_algo = True
 ## Initializations : environment
-game = 'BreakoutDeterministic-v4'
+game = 'Pong-v4'
 env = gym.make(game) # environment
 n_actions = env.action_space.n
 # DQN
@@ -28,9 +29,9 @@ max_epoch = 10**2
 reload_model = 10**4 # frame frequency of nn parameters reloading
 gamma = .99 # discount factor
 batch_size = 32 # amount of elements sampled from the replay_memory
-(min_decay, no_decay_threshold) = (.1, 1.5*10**6)
+(min_decay, no_decay_threshold) = (.1, 10**6)
 test_explo = 0.05
-update_freq = 2 # actions taken before learning on a batch
+update_freq = 4 # actions taken before learning on a batch
 
 # Results display variables
 replay_memory = [] # replay memory to learn smoothly from the past
