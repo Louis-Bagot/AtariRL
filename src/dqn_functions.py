@@ -3,6 +3,7 @@ import tensorflow as tf
 import gym
 import time
 import random
+from scipy.misc import imresize
 
 def init_DQN(atari_shape,n_actions):
     dqn = tf.keras.models.Sequential([ # dqn, with as many outputs as actions
@@ -50,9 +51,11 @@ def init_DQN2(atari_shape,n_actions):
 def one_hot(a, num_classes):
     return np.squeeze(np.eye(num_classes)[a.reshape(-1)])
 
-def preprocess(image):
+def preprocess(image, target_shape=(128,96)):
     """Preprocessing : grayscaling, down-sampling"""
-    return np.max(image, axis=2)[::2,::2]
+    image = max(image, axis=2)[::2,::2]
+    return imresize(image, target_shape)
+
 
 def generate_input_from_index(i, replay_memory, agent_history_length):
     """Generates a DQN-predictable input from index i of replay_memory"""

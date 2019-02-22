@@ -12,7 +12,7 @@ print(device_lib.list_local_devices())
 
 def create_autoencoder(input_shape, latent_space=512):
     return tf.keras.models.Sequential([ # dqn, with as many outputs as actions
-        tf.keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same', input_shape=input_shape, data_format='channels_last'),
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu', padding='same', input_shape=input_shape, data_format='channels_first'),
         tf.keras.layers.Dropout(0.3),
         tf.keras.layers.MaxPooling2D((2, 2), padding='same'),
         tf.keras.layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
@@ -36,7 +36,7 @@ def create_autoencoder(input_shape, latent_space=512):
         tf.keras.layers.Conv2D(64, (3, 3), activation='relu',padding='same'),
         tf.keras.layers.UpSampling2D((2, 2)),
         tf.keras.layers.Conv2D(96, (3, 3), activation='sigmoid', padding='same'),
-        tf.keras.layers.Conv2D(input_shape[0], (3, 3), activation='sigmoid', padding='same',data_format='channels_last')
+        tf.keras.layers.Conv2D(input_shape[0], (3, 3), activation='sigmoid', padding='same',data_format='channels_first')
 
     ])
 
@@ -47,7 +47,7 @@ game = 'BreakoutDeterministic-v4'
 env = gym.make(game) # environment
 n_actions = env.action_space.n
 agent_history_length = 4 # number of frames the agent sees when acting
-atari_shape = (128,96,agent_history_length)
+atari_shape = (agent_history_length, 128, 96)
 
 #
 #
@@ -92,7 +92,7 @@ atari_shape = (128,96,agent_history_length)
 # mine.summary()
 
 autoencoder = create_autoencoder(atari_shape, latent_space=512)
-#autoencoder.summary()
+autoencoder.summary()
 rms_opti = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
 autoencoder.compile(optimizer='adam',loss='mse')
 
@@ -121,14 +121,13 @@ while True:
 
         # Fitting
         if len(batch) == batch_size:
-            one_instance = np.array(one_instance).reshape(128,96,4)
             batch = np.array(batch)
-            print(one_instance.shape)
+            #print(one_instance.shape)
             print(batch.shape)
-            autoencoder.fit(batch, batch, epochs=1, batch_size=batch_size)
+            autoencoder.fit(batch, batch, epochs=1, batch_size=batch_size, verbose=1)
             batch = []
 
         # Create instance
         if len(one_instance) == agent_history_length:
-            batch.append(np.array(one_instance).reshape(128,96,4))
+            batch.append(one_instance)
             one_instance.pop(0) # Remove one instance
