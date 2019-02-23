@@ -48,6 +48,12 @@ def init_DQN2(atari_shape,n_actions):
     dqn.compile(optimizer, loss='mse')
     return dqn
 
+def init_DQN3(atari_shape, n_actions):
+    dqn = tf.keras.models.load_model("encoder.h5")
+    optimizer = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
+    dqn.compile(optimizer, loss='mse')
+    return dqn
+
 def one_hot(a, num_classes):
     return np.squeeze(np.eye(num_classes)[a.reshape(-1)])
 
