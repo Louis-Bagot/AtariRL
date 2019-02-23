@@ -1,0 +1,8 @@
+  Tried
+Raising explo duration (no_decay_threshold)
+Lowering memory usage threshold (memory_start_size)
+Lowering update_freq
+
+  Now trying
+Raising learning rate
+with still lowered memory_start_size

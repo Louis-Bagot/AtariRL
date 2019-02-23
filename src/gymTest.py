@@ -3,7 +3,7 @@ import time
 import numpy as np
 from dqn_functions import *
 
-game = 'Breakout-v0'
+game = 'BreakoutDeterministic-v4'
 env = gym.make(game)
 n_actions = env.action_space.n
 frame = 0

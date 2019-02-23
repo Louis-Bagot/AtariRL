@@ -3,6 +3,7 @@ import pygame
 import sys
 import time
 import matplotlib
+from wrappers import wrap_dqn
 try:
     matplotlib.use('GTK3Agg')
     import matplotlib.pyplot as plt
@@ -73,6 +74,7 @@ def play(env, transpose=True, fps=30, zoom=None, callback=None, keys_to_action=N
 
     obs_s = env.observation_space
     assert type(obs_s) == gym.spaces.box.Box
+    print(obs_s.shape)
     assert len(obs_s.shape) == 2 or (len(obs_s.shape) == 3 and obs_s.shape[2] in [1,3])
 
     if keys_to_action is None:
@@ -177,5 +179,6 @@ class PlayPlot(object):
 
 
 if __name__ == '__main__':
-    env = gym.make("Pong-v4")
+    env = gym.make("BreakoutNoFrameskip-v4")
+    env = wrap_dqn(env) 
     play(env, zoom=4, fps=60)
