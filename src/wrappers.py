@@ -4,7 +4,7 @@ import numpy as np
 from collections import deque
 import gym
 from gym import spaces
-#import cv2
+import cv2
 
 
 class NoopResetEnv(gym.Wrapper):
@@ -232,8 +232,8 @@ def wrap_dqn(env, stack_frames=4, episodic_life=True, reward_clipping=True):
     env = MaxAndSkipEnv(env, skip=4)
     if 'FIRE' in env.unwrapped.get_action_meanings():
         env = FireResetEnv(env)
-    #env = ProcessFrame84(env)
-    #env = ImageToPyTorch(env)
+    env = ProcessFrame84(env)
+    env = ImageToPyTorch(env)
     #env = FrameStack(env, stack_frames)
     if reward_clipping:
         env = ClippedRewardsWrapper(env)

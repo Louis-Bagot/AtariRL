@@ -6,17 +6,22 @@ import random
 import matplotlib.pyplot as plt
 from dqn_functions import *
 from display import *
+from wrappers2 import wrap_dqn
 
-graph(0, "test display")
+graph(0, "somex", "somey", "test display", "PlotTester")
 """Deep Q Network Algorithm"""
 new_algo = True
 ## Initializations : environment
-game = 'Pong-v4'
+game_name = 'Pong'
+game = game_name + 'NoFrameskip-v4'
 env = gym.make(game) # environment
+env = wrap_dqn(env)
 n_actions = env.action_space.n
 # DQN
+o = env.reset()
 agent_history_length = 4 # number of frames the agent sees when acting
-atari_shape = (agent_history_length,105,80)
+atari_shape = (agent_history_length, 84,84)
+print(atari_shape)
 
 dqn = init_DQN2(atari_shape,n_actions) if new_algo\
  else init_DQN(atari_shape, n_actions)
@@ -42,7 +47,7 @@ epoch_record = [] # average scores per epoch
 ## Main loop
 while len(epoch_record) < max_epoch:
     # init observation
-    observation = preprocess(env.reset())
+    observation = env.reset().squeeze(axis=2)
     done = False
     #Game loop
     while not done:
@@ -55,15 +60,13 @@ while len(epoch_record) < max_epoch:
                                 agent_history_length, new_algo)
         else : action = random_action(n_actions)
 
-        # env step; data cleaning
+        # env step
         observation, reward, done, info = env.step(action)
-        observation = preprocess(observation)
-        reward = np.sign(reward)
 
         # Replay memory. Discard the obs_old idea since it's above in memory
-        replay_memory.append((observation, action, reward, done))
+        replay_memory.append((observation.squeeze(axis=2), action, reward, done))
         if len(replay_memory) > max_memory:
-            replay_memory.pop(0)
+            del replay_memory[0]
 
         # old parameters recording
         if (frame % reload_model == 0):
@@ -72,7 +75,7 @@ while len(epoch_record) < max_epoch:
 
         # learning
         if (len(replay_memory) > memory_start_size) and (frame % update_freq == 0):
-            mini_batch = extract_mini_batch(replay_memory, batch_size, \
+            mini_batch = extract_mini_batch(replay_memory, batch_size * update_freq, \
                                             agent_history_length)
             if new_algo:
                 train_dqn2(dqn, old_dqn, mini_batch, gamma, n_actions)
@@ -84,7 +87,7 @@ while len(epoch_record) < max_epoch:
         if (frame % epoch_size == 0):
             print_info(frame, i_episode, len(epoch_record), len(replay_memory), max_memory, epsilon)
             epoch_record.append(test_dqn(game, test_explo, dqn, agent_history_length, new_algo))
-            graph(epoch_record, 'Average score per epoch')
+            graph(epoch_record,'Epoch ('+str(epoch_size)+' frames)','Mean cumulated reward', 'Agent Performance (mean score) at '+game_name, game_name)
     i_episode += 1
 
 keep_playing(game, .05, dqn, agent_history_length, new_algo)

@@ -3,6 +3,7 @@ import tensorflow as tf
 import gym
 import time
 import random
+from wrappers2 import wrap_dqn
 
 def init_DQN(atari_shape,n_actions):
     dqn = tf.keras.models.Sequential([ # dqn, with as many outputs as actions
@@ -43,7 +44,7 @@ def init_DQN2(atari_shape,n_actions):
     filtered_output = tf.keras.layers.Multiply()([output,actions_input])
 
     dqn = tf.keras.models.Model(inputs=[frames_input, actions_input], outputs=filtered_output)
-    optimizer = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
+    optimizer = tf.keras.optimizers.RMSprop(lr=0.001, rho=0.95, epsilon=0.01)
     dqn.compile(optimizer, loss='mse')
     return dqn
 
@@ -141,6 +142,7 @@ def train_dqn2(dqn, old_dqn, mini_batch, gamma, n_actions):
 def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
     print("\tEntering test phase...")
     env = gym.make(game) # environment
+    env = wrap_dqn(env)
     n_actions = env.action_space.n
     replay_memory = []
     max_memory = agent_history_length
@@ -150,7 +152,7 @@ def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
     ## Test loop
     for i_episode in range(0,max_episode):
         # init observation
-        observation = preprocess(env.reset())
+        observation = env.reset().squeeze(axis=2)
         done = False
         cumul_score = 0 #episode total score
         #Game loop
@@ -161,15 +163,13 @@ def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
             else : action = random_action(n_actions)
 
             observation, reward, done, info = env.step(action)
-            observation = preprocess(observation)
-            reward = np.sign(reward)
             cumul_score += reward
             frame += 1
 
             # replay memory handling
-            replay_memory.append((observation, action, reward, done))
+            replay_memory.append((observation.squeeze(axis=2), action, reward, done))
             if len(replay_memory) > max_memory:
-                replay_memory.pop(0)
+                del replay_memory[0]
 
         score_record.append(cumul_score)
 

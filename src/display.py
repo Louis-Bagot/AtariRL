@@ -1,11 +1,16 @@
 import matplotlib.pyplot as plt
 import matplotlib
 from dqn_functions import *
+from wrappers import wrap_dqn
 
-def graph(l, title):
-    plt.plot(l)
-    plt.ylabel(title)
-    plt.savefig('../graphic/perf.png')
+def graph(l, xlab, ylab, title, game_name):
+    f = plt.figure()
+    p = f.add_subplot(111)
+    p.plot(l)
+    p.set_xlabel(xlab)
+    p.set_ylabel(ylab)
+    p.set_title(title)
+    plt.savefig('../graphic/perf_' + game_name + '.png')
 
 def print_info(frame, episode, epoch_nb, memory_usage, memory_capacity, epsilon):
     print("Epoch ", epoch_nb)
@@ -40,6 +45,7 @@ def display_gif_from_frames(frames):
 def keep_playing(game, test_explo, dqn, agent_history_length, new_algo):
     print("Now showing off them mad skillz")
     env = gym.make(game) # environment
+    env = wrap_dqn(env)
     n_actions = env.action_space.n
     replay_memory = []
     max_memory = agent_history_length
@@ -48,7 +54,7 @@ def keep_playing(game, test_explo, dqn, agent_history_length, new_algo):
     ## Play forever
     while True:
         # init observation
-        observation = preprocess(env.reset())
+        observation = env.reset().squeeze(axis=2)
         done = False
         cumul_score = 0 #episode total score
         #Game loop
@@ -60,14 +66,12 @@ def keep_playing(game, test_explo, dqn, agent_history_length, new_algo):
             env.render()
             time.sleep(.05)
             observation, reward, done, info = env.step(action)
-            observation = preprocess(observation)
-            reward = np.sign(reward)
             cumul_score += reward
             frame += 1
 
             # replay memory handling
-            replay_memory.append((observation, action, reward, done))
+            replay_memory.append((observation.squeeze(axis=2), action, reward, done))
             if len(replay_memory) > max_memory:
-                replay_memory.pop(0)
+                del replay_memory[0]
 
         print("\tScore on this episode : ", cumul_score)
