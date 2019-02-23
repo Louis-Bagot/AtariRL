@@ -17,7 +17,7 @@ def init_DQN(atari_shape,n_actions):
         tf.keras.layers.Dense(512, activation=tf.nn.relu),
         tf.keras.layers.Dense(n_actions)
     ])
-    rms_opti = tf.keras.optimizers.RMSprop(lr=0.00025, rho=0.95, epsilon=0.01)
+    opti = tf.keras.optimizers.Adam(lr=0.0001)
     dqn.compile(optimizer=rms_opti,loss='mse')
     return dqn
 

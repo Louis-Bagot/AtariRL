@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import matplotlib
+matplotlib.use('Agg')
 from dqn_functions import *
-from wrappers import wrap_dqn
+from wrappers2 import wrap_dqn
 
 def graph(l, xlab, ylab, title, game_name):
     f = plt.figure()
@@ -13,11 +14,18 @@ def graph(l, xlab, ylab, title, game_name):
     plt.savefig('../graphic/perf_' + game_name + '.png')
 
 def print_info(frame, episode, epoch_nb, memory_usage, memory_capacity, epsilon):
-    print("Epoch ", epoch_nb)
+    print("\nEpoch ", epoch_nb)
     print("\tEpisode ", episode)
     print("\tFrame ", frame)
     print("\tMemory used ", memory_usage, "/", memory_capacity)
     print("\tExplo ", epsilon)
+
+def print_new_model(new_epoch):
+    if new_epoch:
+        print("Reloading model .", end='', flush=True)
+    else :
+        print(".", end='', flush=True) # count the dots !
+    return False
 
 def get_frames_from_game(env, dqn):
     observation = env.reset()

@@ -31,9 +31,9 @@ max_memory = 3*10**5 # max size of replay_memory
 memory_start_size = 10**4 # amount of transitions in memory before using it
 epoch_size = 5*10**4 # number of frames (training batches) within an epoch
 max_epoch = 10**2
-reload_model = 10**4 # frame frequency of nn parameters reloading
+reload_model = 10**3 # nn parameters reload every (this) SGDs
 gamma = .99 # discount factor
-batch_size = 32 # amount of elements sampled from the replay_memory
+batch_size = 32 # amount of elements sampled from the replay_memory, per action
 (min_decay, no_decay_threshold) = (.1, 10**6)
 test_explo = 0.05
 update_freq = 4 # actions taken before learning on a batch
@@ -43,7 +43,8 @@ replay_memory = [] # replay memory to learn smoothly from the past
 frame = 0 # frame number, throughout the whole, main loop.
 i_episode = 0
 epoch_record = [] # average scores per epoch
-
+new_epoch = True # just display var...
+stop = False # game-specific convergence condition
 ## Main loop
 while len(epoch_record) < max_epoch:
     # init observation
@@ -69,8 +70,8 @@ while len(epoch_record) < max_epoch:
             del replay_memory[0]
 
         # old parameters recording
-        if (frame % reload_model == 0):
-            print("Reloading model")
+        if (frame % (reload_model*update_freq) == 0):
+            new_epoch = print_new_model(new_epoch)
             old_dqn = copy_model(dqn) # recording of the NN's old weights
 
         # learning
@@ -83,11 +84,17 @@ while len(epoch_record) < max_epoch:
                 train_dqn(dqn, old_dqn, mini_batch, gamma)
 
         frame += 1
-
         if (frame % epoch_size == 0):
+            new_epoch = True
             print_info(frame, i_episode, len(epoch_record), len(replay_memory), max_memory, epsilon)
             epoch_record.append(test_dqn(game, test_explo, dqn, agent_history_length, new_algo))
             graph(epoch_record,'Epoch ('+str(epoch_size)+' frames)','Mean cumulated reward', 'Agent Performance (mean score) at '+game_name, game_name)
+
+        if len(epoch_record)>0 and epoch_record[-1]>18: #Pong only !
+            stop = True
+            break
+    if stop:
+        break
     i_episode += 1
 
 keep_playing(game, .05, dqn, agent_history_length, new_algo)
