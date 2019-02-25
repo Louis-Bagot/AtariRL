@@ -12,19 +12,21 @@ graph(0, "somex", "somey", "test display", "PlotTester")
 """Deep Q Network Algorithm"""
 new_algo = True
 ## Initializations : environment
-game_name = 'Pong'
+game_name = 'Breakout'
 game = game_name + 'NoFrameskip-v4'
 env = gym.make(game) # environment
 env = wrap_dqn(env)
 n_actions = env.action_space.n
 # DQN
-o = env.reset()
 agent_history_length = 4 # number of frames the agent sees when acting
 atari_shape = (agent_history_length, 84,84)
 print(atari_shape)
-
-dqn = init_DQN2(atari_shape,n_actions) if new_algo\
- else init_DQN(atari_shape, n_actions)
+load_old = False
+if load_old:
+    dqn = tf.keras.models.load_model('models/gud_'+game_name)
+else :
+    dqn = init_DQN2(atari_shape,n_actions) if new_algo\
+     else init_DQN(atari_shape, n_actions)
 
 # miscellanous initializations of variables or hyperparameters
 max_memory = 3*10**5 # max size of replay_memory
@@ -34,7 +36,7 @@ max_epoch = 10**2
 reload_model = 10**3 # nn parameters reload every (this) SGDs
 gamma = .99 # discount factor
 batch_size = 32 # amount of elements sampled from the replay_memory, per action
-(min_decay, no_decay_threshold) = (.1, 10**6)
+(min_decay, max_decay, no_decay_threshold) = (.1, 1, 10**6)
 test_explo = 0.05
 update_freq = 4 # actions taken before learning on a batch
 
@@ -48,12 +50,12 @@ stop = False # game-specific convergence condition
 ## Main loop
 while len(epoch_record) < max_epoch:
     # init observation
-    observation = env.reset().squeeze(axis=2)
+    observation = env.reset()
     done = False
     #Game loop
     while not done:
         # update decaying exploration parameter
-        epsilon = decay_epsilon(frame, min_decay, no_decay_threshold)
+        epsilon = decay_epsilon(frame, min_decay, max_decay, no_decay_threshold)
 
         # take action; or act randomly if memory is too small
         if (frame > memory_start_size):
@@ -62,17 +64,18 @@ while len(epoch_record) < max_epoch:
         else : action = random_action(n_actions)
 
         # env step
-        observation, reward, done, info = env.step(action)
+        with tf.device('/cpu:0'):
+            observation, reward, done, info = env.step(action)
 
         # Replay memory. Discard the obs_old idea since it's above in memory
-        replay_memory.append((observation.squeeze(axis=2), action, reward, done))
+        replay_memory.append((observation, action, np.sign(reward), done))
         if len(replay_memory) > max_memory:
             del replay_memory[0]
 
         # old parameters recording
         if (frame % (reload_model*update_freq) == 0):
             new_epoch = print_new_model(new_epoch)
-            old_dqn = copy_model(dqn) # recording of the NN's old weights
+            old_dqn = copy_model(dqn, game_name) # recording of the NN's old weights
 
         # learning
         if (len(replay_memory) > memory_start_size) and (frame % update_freq == 0):
@@ -90,7 +93,7 @@ while len(epoch_record) < max_epoch:
             epoch_record.append(test_dqn(game, test_explo, dqn, agent_history_length, new_algo))
             graph(epoch_record,'Epoch ('+str(epoch_size)+' frames)','Mean cumulated reward', 'Agent Performance (mean score) at '+game_name, game_name)
 
-        if len(epoch_record)>0 and epoch_record[-1]>18: #Pong only !
+        if game_name == 'Pong' and len(epoch_record)>0 and epoch_record[-1]>18:
             stop = True
             break
     if stop:

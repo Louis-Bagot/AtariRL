@@ -6,6 +6,7 @@ import random
 from wrappers2 import wrap_dqn
 
 def init_DQN(atari_shape,n_actions):
+    """OBSOLETE !!"""
     dqn = tf.keras.models.Sequential([ # dqn, with as many outputs as actions
         tf.keras.layers.Conv2D(filters = 32, kernel_size = (8,8), strides=(4,4), \
             activation=tf.nn.relu, input_shape=atari_shape, data_format='channels_first'),
@@ -17,9 +18,10 @@ def init_DQN(atari_shape,n_actions):
         tf.keras.layers.Dense(512, activation=tf.nn.relu),
         tf.keras.layers.Dense(n_actions)
     ])
-    opti = tf.keras.optimizers.Adam(lr=0.0001)
-    dqn.compile(optimizer=rms_opti,loss='mse')
+    optimizer = tf.keras.optimizers.Adam(lr=0.0001)
+    dqn.compile(optimizer=optimizer,loss='mse')
     return dqn
+    """OBSOLETE !!"""
 
 def init_DQN2(atari_shape,n_actions):
     # With the functional API we need to define the inputs.
@@ -44,7 +46,7 @@ def init_DQN2(atari_shape,n_actions):
     filtered_output = tf.keras.layers.Multiply()([output,actions_input])
 
     dqn = tf.keras.models.Model(inputs=[frames_input, actions_input], outputs=filtered_output)
-    optimizer = tf.keras.optimizers.RMSprop(lr=0.001, rho=0.95, epsilon=0.01)
+    optimizer = tf.keras.optimizers.Adam(lr=0.0001)
     dqn.compile(optimizer, loss='mse')
     return dqn
 
@@ -81,13 +83,14 @@ def extract_mini_batch(replay_memory, batch_size, agent_history_length):
 
     return np.array(mini_batch)
 
-def decay_epsilon(frame, min_decay, no_decay_threshold):
+def decay_epsilon(frame,  min_decay, max_decay, no_decay_threshold):
     return min_decay if (frame > no_decay_threshold)\
-                     else (min_decay-1)*frame/no_decay_threshold +1
+                     else (min_decay-max_decay)*frame/no_decay_threshold +max_decay
 
 def greedy(dqn, frame_seq, new_algo, n_actions):
-    return np.argmax(dqn.predict(np.array([frame_seq]))) if not new_algo else\
-           np.argmax(dqn.predict([np.array([frame_seq]), np.array([np.ones(n_actions)])]))
+    with tf.device("/device:GPU:0"):
+        return np.argmax(dqn.predict(np.array([frame_seq]))) if not new_algo else\
+               np.argmax(dqn.predict([np.array([frame_seq]), np.array([np.ones(n_actions)])]))
 
 def random_action(n_actions):
     return np.random.randint(n_actions)
@@ -99,10 +102,12 @@ def eps_greedy(epsilon, n_actions, dqn, replay_memory, agent_history_length, new
                                                    agent_history_length), \
                     new_algo, n_actions)
 
-def copy_model(model):
+def copy_model(model, game_name):
     """Returns a copy of a keras model."""
-    model.save('tmp_model')
-    return tf.keras.models.load_model('tmp_model')
+    model.save('models/tmp_model_'+game_name)
+    copy = tf.keras.models.clone_model(model)
+    copy.set_weights(model.get_weights())
+    return copy
 
 def train_dqn(dqn, old_dqn, mini_batch, gamma):
     # extract s a r s' from mini_batch; and the terminal states
@@ -136,8 +141,9 @@ def train_dqn2(dqn, old_dqn, mini_batch, gamma, n_actions):
     new_q_values[dones] = 0
     # q update: reward + gamma * max new state q
     q_targets = rewards + gamma * np.max(new_q_values, axis=1)
-    dqn.fit([states, actions], actions * q_targets[:, None],\
-            epochs=1, batch_size=len(states), verbose=0)
+    with tf.device('/device:GPU:0'):
+        dqn.fit([states, actions], actions * q_targets[:, None],\
+                epochs=1, batch_size=len(states), verbose=0)
 
 def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
     print("\tEntering test phase...")
@@ -152,11 +158,13 @@ def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
     ## Test loop
     for i_episode in range(0,max_episode):
         # init observation
-        observation = env.reset().squeeze(axis=2)
+        observation = env.reset()
         done = False
         cumul_score = 0 #episode total score
         #Game loop
-        while not done:
+        while not env.env.was_real_done:
+            if done:
+                observation = env.reset()
             if (frame > max_memory):
                 action = eps_greedy(test_explo, n_actions, dqn,replay_memory,\
                                     agent_history_length, new_algo)
@@ -167,7 +175,7 @@ def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
             frame += 1
 
             # replay memory handling
-            replay_memory.append((observation.squeeze(axis=2), action, reward, done))
+            replay_memory.append((observation, action, np.sign(reward), done))
             if len(replay_memory) > max_memory:
                 del replay_memory[0]
 

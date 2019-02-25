@@ -3,6 +3,8 @@ import matplotlib
 matplotlib.use('Agg')
 from dqn_functions import *
 from wrappers2 import wrap_dqn
+from PIL import Image
+import imageio
 
 def graph(l, xlab, ylab, title, game_name):
     f = plt.figure()
@@ -12,6 +14,7 @@ def graph(l, xlab, ylab, title, game_name):
     p.set_ylabel(ylab)
     p.set_title(title)
     plt.savefig('../graphic/perf_' + game_name + '.png')
+    plt.close(f)
 
 def print_info(frame, episode, epoch_nb, memory_usage, memory_capacity, epsilon):
     print("\nEpoch ", epoch_nb)
@@ -62,11 +65,13 @@ def keep_playing(game, test_explo, dqn, agent_history_length, new_algo):
     ## Play forever
     while True:
         # init observation
-        observation = env.reset().squeeze(axis=2)
+        observation = env.reset()
         done = False
         cumul_score = 0 #episode total score
         #Game loop
-        while not done:
+        while not env.env.was_real_done:
+            if done:
+                observation = env.reset()
             if (frame > agent_history_length):
                 action = eps_greedy(test_explo, n_actions, dqn, replay_memory,\
                                     agent_history_length, new_algo)
@@ -78,8 +83,44 @@ def keep_playing(game, test_explo, dqn, agent_history_length, new_algo):
             frame += 1
 
             # replay memory handling
-            replay_memory.append((observation.squeeze(axis=2), action, reward, done))
+            replay_memory.append((observation, action, np.sign(reward), done))
             if len(replay_memory) > max_memory:
                 del replay_memory[0]
 
         print("\tScore on this episode : ", cumul_score)
+
+def make_gif(game_name, dqn, comstring):
+    # play a single episode, recording the frames
+    # init observation
+    game = game_name+'NoFrameskip-v4'
+    env = gym.make(game) # environment
+    env = wrap_dqn(env)
+    n_actions = env.action_space.n
+    replay_memory = []
+    agent_history_length = 4
+    max_memory = agent_history_length
+    observation = env.reset()
+    done = False
+    new_algo = True
+    cumul_score = 0 #episode total score
+    frame = 0
+    frames = []
+    #Game loop
+    while not env.env.was_real_done:
+        if done:
+            observation = env.reset()
+        if (frame > agent_history_length):
+            action = eps_greedy(.05, n_actions, dqn, replay_memory,\
+                                agent_history_length, new_algo)
+        else : action = random_action(n_actions)
+        frames.append(Image.fromarray(env.render(mode = 'rgb_array'), 'RGB'))
+        observation, reward, done, info = env.step(action)
+        cumul_score += int(reward)
+        frame += 1
+
+        # replay memory handling
+        replay_memory.append((observation, action, np.sign(reward), done))
+        if len(replay_memory) > max_memory:
+            del replay_memory[0]
+
+    imageio.mimsave('../graphic/gifs/'+game_name+str(cumul_score)+comstring+'.gif', frames)

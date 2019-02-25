@@ -137,7 +137,7 @@ class WarpFrame(gym.ObservationWrapper):
         self.grayscale = grayscale
         if self.grayscale:
             self.observation_space = spaces.Box(low=0, high=255,
-                shape=(self.height, self.width, 1), dtype=np.uint8)
+                shape=(self.height, self.width), dtype=np.uint8)
         else:
             self.observation_space = spaces.Box(low=0, high=255,
                 shape=(self.height, self.width, 3), dtype=np.uint8)
@@ -146,8 +146,6 @@ class WarpFrame(gym.ObservationWrapper):
         if self.grayscale:
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         frame = cv2.resize(frame, (self.width, self.height), interpolation=cv2.INTER_AREA)
-        if self.grayscale:
-            frame = np.expand_dims(frame, -1)
         return frame
 
 class FrameStack(gym.Wrapper):
@@ -231,21 +229,19 @@ def make_atari(env_id, timelimit=True):
     env = MaxAndSkipEnv(env, skip=4)
     return env
 
-def wrap_dqn(env, episode_life=True, clip_rewards=True, frame_stack=False, scale=False):
+def wrap_dqn(env, episode_life=True, clip_rewards=False, frame_stack=False, scale=False):
     """Configure environment for DeepMind-style Atari.
     """
     assert 'NoFrameskip' in env.spec.id
     env = NoopResetEnv(env, noop_max=30)
     env = MaxAndSkipEnv(env, skip=4)
+    env = WarpFrame(env)
+    if clip_rewards:
+        env = ClipRewardEnv(env)
     if episode_life:
         env = EpisodicLifeEnv(env)
     if 'FIRE' in env.unwrapped.get_action_meanings():
         env = FireResetEnv(env)
-    env = WarpFrame(env)
-    if scale:
-        env = ScaledFloatFrame(env)
-    if clip_rewards:
-        env = ClipRewardEnv(env)
     if frame_stack:
         env = FrameStack(env, 4)
     return env
