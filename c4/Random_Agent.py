@@ -1,4 +1,4 @@
-class Random_agent():
+class Random_Agent():
     """Plays randomly."""
     def __init__(self):
         pass

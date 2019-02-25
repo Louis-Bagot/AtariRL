@@ -3,7 +3,7 @@ import pygame
 import sys
 import time
 import matplotlib
-from wrappers import wrap_dqn
+from wrappers2 import wrap_dqn
 try:
     matplotlib.use('GTK3Agg')
     import matplotlib.pyplot as plt
@@ -74,7 +74,6 @@ def play(env, transpose=True, fps=30, zoom=None, callback=None, keys_to_action=N
 
     obs_s = env.observation_space
     assert type(obs_s) == gym.spaces.box.Box
-    print(obs_s.shape)
     assert len(obs_s.shape) == 2 or (len(obs_s.shape) == 3 and obs_s.shape[2] in [1,3])
 
     if keys_to_action is None:
@@ -111,7 +110,11 @@ def play(env, transpose=True, fps=30, zoom=None, callback=None, keys_to_action=N
         else:
             action = keys_to_action.get(tuple(sorted(pressed_keys)), 0)
             prev_obs = obs
-            obs, rew, env_done, info = env.step(action)
+            obs, rew, done, info = env.step(action)
+            env_done = env.env.was_real_done
+            if done:
+                print("little done:",done,"big done:", env.env.was_real_done)
+                obs = env.reset()
             """if (rew != 0):
                 cumul_score += rew
                 print(cumul_score)"""

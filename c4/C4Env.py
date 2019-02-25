@@ -1,33 +1,32 @@
-from game_original import Board
+from game_original import BoardC4
 import numpy as np
 
 class C4Env():
     """Gym-like environment for connect 4"""
     def __init__(self):
-        self.board = Board()
+        self.board = BoardC4()
         self.n_actions = self.board.width
+        self.done = False
+        self.r = None
 
     def render(self):
         print(self.board.dico2array())
 
     def reset(self):
-        self.board = Board()
+        self.board = BoardC4()
         return self.board.fields2channels()
 
     def step(self, action):
         self.board.move(action)
-        o = self.board.fields2channels()
-        d = bool(self.board.won())
-        r = self.board.opponent if d else 0 # already switched
-        if not any(self.legal_moves()):
-            d = True
-            r = 0
-        i = ""
-        return o, r, d, i
+        self.done = bool(self.board.won())
+        self.r = self.board.opponent if self.done else 0 # already switched
+        if not self.done and not any(self.legal_moves()):
+            self.done = True
+            self.r = 0
+        return self.done
 
     def random_move(self):
-        moves = np.array(range(self.board.width))
-        return np.random.choice(moves[self.board.legal_moves()])
+        return np.random.choice(self.board.legal_moves())
 
     def legal_moves(self):
         return self.board.legal_moves()
