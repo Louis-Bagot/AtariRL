@@ -21,7 +21,7 @@ n_actions = env.action_space.n
 agent_history_length = 4 # number of frames the agent sees when acting
 atari_shape = (agent_history_length, 84,84)
 print(atari_shape)
-load_old = False
+load_old = True
 if load_old:
     dqn = tf.keras.models.load_model('models/gud_'+game_name)
 else :
@@ -36,7 +36,7 @@ max_epoch = 10**2
 reload_model = 10**3 # nn parameters reload every (this) SGDs
 gamma = .99 # discount factor
 batch_size = 32 # amount of elements sampled from the replay_memory, per action
-(min_decay, max_decay, no_decay_threshold) = (.1, 1, 10**6)
+(min_decay, max_decay, no_decay_threshold) = (.1, .1, 10**6)
 test_explo = 0.05
 update_freq = 4 # actions taken before learning on a batch
 
