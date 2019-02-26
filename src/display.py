@@ -89,7 +89,7 @@ def keep_playing(game, test_explo, dqn, agent_history_length, new_algo):
 
         print("\tScore on this episode : ", cumul_score)
 
-def make_gif(game_name, dqn, comstring):
+def make_gif(game_name, test_explo, dqn, comstring):
     # play a single episode, recording the frames
     # init observation
     game = game_name+'NoFrameskip-v4'
@@ -110,7 +110,7 @@ def make_gif(game_name, dqn, comstring):
         if done:
             observation = env.reset()
         if (frame > agent_history_length):
-            action = eps_greedy(.05, n_actions, dqn, replay_memory,\
+            action = eps_greedy(test_explo, n_actions, dqn, replay_memory,\
                                 agent_history_length, new_algo)
         else : action = random_action(n_actions)
         frames.append(Image.fromarray(env.render(mode = 'rgb_array'), 'RGB'))
