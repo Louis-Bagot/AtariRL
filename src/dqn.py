@@ -12,7 +12,7 @@ graph(0, "somex", "somey", "test display", "PlotTester")
 """Deep Q Network Algorithm"""
 new_algo = True
 ## Initializations : environment
-game_name = 'Breakout'
+game_name = 'Pong'
 game = game_name + 'NoFrameskip-v4'
 env = gym.make(game) # environment
 env = wrap_dqn(env)
@@ -20,8 +20,7 @@ n_actions = env.action_space.n
 # DQN
 agent_history_length = 4 # number of frames the agent sees when acting
 atari_shape = (agent_history_length, 84,84)
-print(atari_shape)
-load_old = True
+load_old = False
 if load_old:
     dqn = tf.keras.models.load_model('models/gud_'+game_name)
 else :
@@ -36,7 +35,7 @@ max_epoch = 10**2
 reload_model = 10**3 # nn parameters reload every (this) SGDs
 gamma = .99 # discount factor
 batch_size = 32 # amount of elements sampled from the replay_memory, per action
-(min_decay, max_decay, no_decay_threshold) = (.1, .1, 10**6)
+(min_decay, max_decay, no_decay_threshold) = (.05, 1, 10**6)
 test_explo = 0.05
 update_freq = 4 # actions taken before learning on a batch
 
@@ -46,7 +45,6 @@ frame = 0 # frame number, throughout the whole, main loop.
 i_episode = 0
 epoch_record = [] # average scores per epoch
 new_epoch = True # just display var...
-stop = False # game-specific convergence condition
 ## Main loop
 while len(epoch_record) < max_epoch:
     # init observation
@@ -79,7 +77,7 @@ while len(epoch_record) < max_epoch:
 
         # learning
         if (len(replay_memory) > memory_start_size) and (frame % update_freq == 0):
-            mini_batch = extract_mini_batch(replay_memory, batch_size * update_freq, \
+            mini_batch = extract_mini_batch(replay_memory, batch_size*update_freq, \
                                             agent_history_length)
             if new_algo:
                 train_dqn2(dqn, old_dqn, mini_batch, gamma, n_actions)
@@ -93,11 +91,6 @@ while len(epoch_record) < max_epoch:
             epoch_record.append(test_dqn(game, test_explo, dqn, agent_history_length, new_algo))
             graph(epoch_record,'Epoch ('+str(epoch_size)+' frames)','Mean cumulated reward', 'Agent Performance (mean score) at '+game_name, game_name)
 
-        if game_name == 'Pong' and len(epoch_record)>0 and epoch_record[-1]>18:
-            stop = True
-            break
-    if stop:
-        break
     i_episode += 1
 
 keep_playing(game, .05, dqn, agent_history_length, new_algo)

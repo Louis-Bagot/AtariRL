@@ -6,7 +6,8 @@ import random
 from wrappers2 import wrap_dqn
 
 def init_DQN(atari_shape,n_actions):
-    """OBSOLETE !!"""
+    pass
+    """ OBSOLETE
     dqn = tf.keras.models.Sequential([ # dqn, with as many outputs as actions
         tf.keras.layers.Conv2D(filters = 32, kernel_size = (8,8), strides=(4,4), \
             activation=tf.nn.relu, input_shape=atari_shape, data_format='channels_first'),
@@ -21,34 +22,35 @@ def init_DQN(atari_shape,n_actions):
     optimizer = tf.keras.optimizers.Adam(lr=0.0001)
     dqn.compile(optimizer=optimizer,loss='mse')
     return dqn
-    """OBSOLETE !!"""
+    """
 
 def init_DQN2(atari_shape,n_actions):
-    # With the functional API we need to define the inputs.
-    frames_input = tf.keras.layers.Input(atari_shape, name='frames')
-    actions_input = tf.keras.layers.Input((n_actions,), name='mask')
+    with tf.device("/device:gpu:0"):
+        # With the functional API we need to define the inputs.
+        frames_input = tf.keras.layers.Input(atari_shape, name='frames')
+        actions_input = tf.keras.layers.Input((n_actions,), name='mask')
 
-    # "The first hidden layer convolves 16 8×8 filters with stride 4 with the input image and applies a rectifier nonlinearity."
-    conv_1 = tf.keras.layers.Conv2D(
-        16, (8, 8), strides=(4, 4), activation=tf.nn.relu, data_format="channels_first"
-    )(frames_input)
-    # "The second hidden layer convolves 32 4×4 filters with stride 2, again followed by a rectifier nonlinearity."
-    conv_2 = tf.keras.layers.Conv2D(
-        32, (4, 4), strides=(2, 2), activation=tf.nn.relu
-    )(conv_1)
-    # Flattening the second convolutional layer.
-    conv_flattened = tf.keras.layers.Flatten()(conv_2)
-    # "The final hidden layer is fully-connected and consists of 256 rectifier units."
-    hidden = tf.keras.layers.Dense(256, activation=tf.nn.relu)(conv_flattened)
-    # "The output layer is a fully-connected linear layer with a single output for each valid action."
-    output = tf.keras.layers.Dense(n_actions)(hidden)
-    # Finally, we multiply the output by the mask
-    filtered_output = tf.keras.layers.Multiply()([output,actions_input])
+        # "The first hidden layer convolves 16 8×8 filters with stride 4 with the input image and applies a rectifier nonlinearity."
+        conv_1 = tf.keras.layers.Conv2D(
+            16, (8, 8), strides=(4, 4), activation=tf.nn.relu, data_format="channels_first"
+        )(frames_input)
+        # "The second hidden layer convolves 32 4×4 filters with stride 2, again followed by a rectifier nonlinearity."
+        conv_2 = tf.keras.layers.Conv2D(
+            32, (4, 4), strides=(2, 2), activation=tf.nn.relu
+        )(conv_1)
+        # Flattening the second convolutional layer.
+        conv_flattened = tf.keras.layers.Flatten()(conv_2)
+        # "The final hidden layer is fully-connected and consists of 256 rectifier units."
+        hidden = tf.keras.layers.Dense(256, activation=tf.nn.relu)(conv_flattened)
+        # "The output layer is a fully-connected linear layer with a single output for each valid action."
+        output = tf.keras.layers.Dense(n_actions)(hidden)
+        # Finally, we multiply the output by the mask
+        filtered_output = tf.keras.layers.Multiply()([output,actions_input])
 
-    dqn = tf.keras.models.Model(inputs=[frames_input, actions_input], outputs=filtered_output)
-    optimizer = tf.keras.optimizers.Adam(lr=0.0001)
-    dqn.compile(optimizer, loss='mse')
-    return dqn
+        dqn = tf.keras.models.Model(inputs=[frames_input, actions_input], outputs=filtered_output)
+        optimizer = tf.keras.optimizers.Adam(lr=0.00025)
+        dqn.compile(optimizer, loss=tf.losses.huber_loss)
+        return dqn
 
 def one_hot(a, num_classes):
     return np.squeeze(np.eye(num_classes)[a.reshape(-1)])
