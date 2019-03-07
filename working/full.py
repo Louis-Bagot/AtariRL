@@ -132,6 +132,7 @@ import tensorflow as tf
 import numpy as np
 import imageio
 from skimage.transform import resize
+from display import graph
 
 
 # In[ ]:
@@ -941,6 +942,7 @@ def train():
                     SUMM_WRITER.add_summary(summ_param, frame_number)
 
                     print(len(rewards), frame_number, np.mean(rewards[-100:]))
+                    graph(rewards,'Episode','Reward per episode', 'Agent Performance (score) at '+'Pong', 'Pong')
                     with open('rewards.dat', 'a') as reward_file:
                         print(len(rewards), frame_number,
                               np.mean(rewards[-100:]), file=reward_file)
