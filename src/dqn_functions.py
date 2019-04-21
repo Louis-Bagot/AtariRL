@@ -52,6 +52,40 @@ def init_DQN2(atari_shape,n_actions):
         dqn.compile(optimizer, loss=tf.losses.huber_loss)
         return dqn
 
+def init_DQN_nature(atari_shape,n_actions): # plus the 4th conv layer 
+    with tf.device("/device:gpu:0"):
+        # With the functional API we need to define the inputs.
+        frames_input = tf.keras.layers.Input(atari_shape, name='frames')
+        actions_input = tf.keras.layers.Input((n_actions,), name='mask')
+
+        # "The first hidden layer convolves 16 8×8 filters with stride 4 with the input image and applies a rectifier nonlinearity."
+        conv_1 = tf.keras.layers.Conv2D(
+            32, (8, 8), strides=(4, 4), activation=tf.nn.relu, data_format="channels_first", kernel_initializer=tf.variance_scaling_initializer(scale=2)
+        )(frames_input)
+        # "The second hidden layer convolves 32 4×4 filters with stride 2, again followed by a rectifier nonlinearity."
+        conv_2 = tf.keras.layers.Conv2D(
+            64, (4, 4), strides=(2, 2), activation=tf.nn.relu, kernel_initializer=tf.variance_scaling_initializer(scale=2)
+        )(conv_1)
+        conv_3 = tf.keras.layers.Conv2D(
+            64, (3, 3), strides=(1, 1), activation=tf.nn.relu, kernel_initializer=tf.variance_scaling_initializer(scale=2)
+        )(conv_2)
+        conv_4 = tf.keras.layers.Conv2D(
+            1024, (7, 7), strides=(1, 1), activation=tf.nn.relu, kernel_initializer=tf.variance_scaling_initializer(scale=2)
+        )(conv_3)
+        # Flattening the second convolutional layer.
+        conv_flattened = tf.keras.layers.Flatten()(conv_4)
+        # "The final hidden layer is fully-connected and consists of 256 rectifier units."
+        hidden = tf.keras.layers.Dense(512, activation=tf.nn.relu)(conv_flattened)
+        # "The output layer is a fully-connected linear layer with a single output for each valid action."
+        output = tf.keras.layers.Dense(n_actions)(hidden)
+        # Finally, we multiply the output by the mask
+        filtered_output = tf.keras.layers.Multiply()([output,actions_input])
+
+        dqn = tf.keras.models.Model(inputs=[frames_input, actions_input], outputs=filtered_output)
+        optimizer = tf.keras.optimizers.Adam(lr=0.00025)
+        dqn.compile(optimizer, loss=tf.losses.huber_loss)
+        return dqn
+
 def one_hot(a, num_classes):
     return np.squeeze(np.eye(num_classes)[a.reshape(-1)])
 
@@ -158,7 +192,7 @@ def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
     score_record = [] # episode scores over time (episodes)
     frame = 0
     ## Test loop
-    for i_episode in range(0,max_episode):
+    for i_episode in range(max_episode):
         # init observation
         observation = env.reset()
         done = False
@@ -177,7 +211,7 @@ def test_dqn(game, test_explo, dqn, agent_history_length, new_algo):
             frame += 1
 
             # replay memory handling
-            replay_memory.append((observation, action, np.sign(reward), done))
+            replay_memory.append((observation, action, reward, done))
             if len(replay_memory) > max_memory:
                 del replay_memory[0]
 

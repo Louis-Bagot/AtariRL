@@ -7,8 +7,9 @@
 TRAIN = True
 TEST = True
 
-ENV_NAME = 'BreakoutDeterministic-v4'
-ENV_NAME = 'PongDeterministic-v4'
+game_name = 'Pong'
+ENV_NAME = game_name+'Deterministic-v4'
+#ENV_NAME = 'PongDeterministic-v4'
 # You can increase the learning rate to 0.00025 in Pong for quicker results
 
 
@@ -776,7 +777,7 @@ tf.reset_default_graph()
 
 # Control parameters
 MAX_EPISODE_LENGTH = 18000       # Equivalent of 5 minutes of gameplay at 60 frames per second
-EVAL_FREQUENCY = 200000          # Number of frames the agent sees between evaluations
+EVAL_FREQUENCY = 50000           # Number of frames the agent sees between evaluations
 EVAL_STEPS = 10000               # Number of frames for one evaluation
 NETW_UPDATE_FREQ = 10000         # Number of chosen actions between updating the target network.
                                  # According to Mnih et al. 2015 this is measured in the number of
@@ -797,7 +798,7 @@ HIDDEN = 1024                    # Number of filters in the final convolutional 
                                  # (1,1,512). This is slightly different from the original
                                  # implementation but tests I did with the environment Pong
                                  # have shown that this way the score increases more quickly
-LEARNING_RATE = 0.00025         # Set to 0.00025 in Pong for quicker results.
+LEARNING_RATE = 0.00025          # Set to 0.00025 in Pong for quicker results.
                                  # Hessel et al. 2017 used 0.0000625
 BS = 32                          # Batch size
 
@@ -889,6 +890,7 @@ def train():
         frame_number = 0
         rewards = []
         loss_list = []
+        perf_record = []
 
         while frame_number < MAX_FRAMES:
 
@@ -942,7 +944,6 @@ def train():
                     SUMM_WRITER.add_summary(summ_param, frame_number)
 
                     print(len(rewards), frame_number, np.mean(rewards[-100:]))
-                    graph(rewards,'Episode','Reward per episode', 'Agent Performance (score) at '+'Pong', 'Pong')
                     with open('rewards.dat', 'a') as reward_file:
                         print(len(rewards), frame_number,
                               np.mean(rewards[-100:]), file=reward_file)
@@ -978,8 +979,10 @@ def train():
                 if terminal:
                     eval_rewards.append(episode_reward_sum)
                     gif = False # Save only the first game of the evaluation as a gif
-
-            print("Evaluation score:\n", np.mean(eval_rewards))
+            score = np.mean(eval_rewards)
+            print("Evaluation score:\n", score)
+            perf_record.append(score)
+            graph(perf_record,'Epoch ('+str(EVAL_FREQUENCY)+' frames)','Average reward per episode over '+str(EVAL_STEPS)+' frames', 'Agent Performance (mean test score) at '+game_name,game_name)
             try:
                 generate_gif(frame_number, frames_for_gif, eval_rewards[0], PATH)
             except IndexError:

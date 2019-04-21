@@ -24,19 +24,19 @@ load_old = False
 if load_old:
     dqn = tf.keras.models.load_model('models/gud_'+game_name)
 else :
-    dqn = init_DQN2(atari_shape,n_actions) if new_algo\
+    dqn = init_DQN_nature(atari_shape,n_actions) if new_algo\
      else init_DQN(atari_shape, n_actions)
 
 # miscellanous initializations of variables or hyperparameters
-max_memory = 3*10**5 # max size of replay_memory
+max_memory = 6*10**5 # max size of replay_memory
 memory_start_size = 10**4 # amount of transitions in memory before using it
 epoch_size = 5*10**4 # number of frames (training batches) within an epoch
 max_epoch = 10**2
-reload_model = 10**3 # nn parameters reload every (this) SGDs
+reload_model = 10**4 # nn parameters reload every (this) frames
 gamma = .99 # discount factor
 batch_size = 32 # amount of elements sampled from the replay_memory, per action
-(min_decay, max_decay, no_decay_threshold) = (.05, 1, 10**6)
-test_explo = 0.05
+(max_decay, min_decay, no_decay_threshold) = (1, .1, 10**6)
+test_explo = 0.03
 update_freq = 4 # actions taken before learning on a batch
 
 # Results display variables
@@ -62,16 +62,15 @@ while len(epoch_record) < max_epoch:
         else : action = random_action(n_actions)
 
         # env step
-        with tf.device('/cpu:0'):
-            observation, reward, done, info = env.step(action)
+        observation, reward, done, info = env.step(action)
 
         # Replay memory. Discard the obs_old idea since it's above in memory
-        replay_memory.append((observation, action, np.sign(reward), done))
+        replay_memory.append((observation, action, reward, done))
         if len(replay_memory) > max_memory:
             del replay_memory[0]
 
         # old parameters recording
-        if (frame % (reload_model*update_freq) == 0):
+        if (frame % (reload_model) == 0):
             new_epoch = print_new_model(new_epoch)
             old_dqn = copy_model(dqn, game_name) # recording of the NN's old weights
 
@@ -93,4 +92,4 @@ while len(epoch_record) < max_epoch:
 
     i_episode += 1
 
-keep_playing(game, .05, dqn, agent_history_length, new_algo)
+keep_playing(game, text_explo, dqn, agent_history_length, new_algo)
